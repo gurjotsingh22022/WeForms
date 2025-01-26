@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+
+model Plan {
+  id                  Int       @id @default(autoincrement())
+  name                String    @unique  // e.g., "Free" or "Paid"
+  max_submissions     Int       @default(300)
+  createdAt           DateTime  @default(now())
+  users               User[]
+
+  // You can also add fields for pricing, features, etc.
+  // price     Float?
+}
+
+model User {
+  id                Int      @id @default(autoincrement())
+  name              String?
+  email             String   @unique
+  apiKey            String   @unique  // This API key will be used for form submission
+  image             String?
+  provider          String?
+  provider_user_id  String?
+  password          String?
+  planId            Int
+  planStartedAt     DateTime @default(now())
+  planEndAt         DateTime?
+  lastPlanUpdateAt  DateTime @default(now())
+  submissionCount   Int @default(0)
+  createdAt         DateTime @default(now())
+  isLoggable        Boolean   @default(false)
+  plan              Plan     @relation(fields: [planId], references: [id])
+  addedEmails       AddedUser[]   @relation("ParentUserEmails") // Relation to added emails
+
+  // Other fields you might need
+  // firstName   String?
+  // lastName    String?
+}
+
+
+model AddedUser {
+  id            String        @id @default(cuid()) // Unique ID for each added email
+  email         String                              // Added email (could also be a User)
+  apiKey        String        @unique    // API key for added email usage
+  parentUserId  Int                             // Parent user ID
+  createdAt     DateTime      @default(now())     // Timestamp for email addition
+
+  parentUser    User          @relation(fields: [parentUserId], references: [id], name: "ParentUserEmails")
+
+  @@unique([parentUserId, email])                // Compound unique constraint
+}
